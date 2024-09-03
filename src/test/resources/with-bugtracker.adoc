@@ -1,0 +1,12 @@
+==  Releases Note
+:toc:
+:toc-title: Versions récentes
+
+
+=== Version : v1 (05/05/2018)
+* Features 💰
+** link:http://mybugtracker.com/project-2[project-2] : awesome feature
+
+* Corrections 🩹
+** link:http://mybugtracker.com/project-1[project-1] : big error
+

@@ -1,0 +1,44 @@
+= ReleasenoteGenerator
+
+This app generate a release note according to the git history.
+The output format is asccidoc.
+
+It's written in java and use the link:https://quarkus.io[quarkus framework]
+
+== Build
+
+.jar file
+[source,shell]
+----
+mvnw package
+----
+
+.binary file
+[source,shell]
+----
+mvnw package -Dnative
+----
+
+
+== Usage
+
+.print help
+[source,script]
+----
+>releasenoteGenerator-1.0.0-SNAPSHOT-runner -h
+
+Usage: releaseNoteGenerator [-hV] [-b=<bugTrackerUrl>] [-d=<target>]
+                            [-o=<output>] [-p=<issueIdPattern>] [-t=<tag>]
+generate releaseNote for conventional commits
+  -b, --bug-tracker-url=<bugTrackerUrl>
+                             Bug traker url
+  -d, --directory=<target>   local git repository
+  -h, --help                 Show this help message and exit.
+  -o, --output=<output>      file relative path where the release note will be
+                               writen
+  -p, --pattern=<issueIdPattern>
+                             Issue id pattern (regex)
+  -t, --tags=<tag>           Tag name
+  -V, --version              Print version information and exit.
+----
+
