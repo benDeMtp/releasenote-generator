@@ -6,6 +6,10 @@
 //DEPS org.slf4j:slf4j-simple:2.0.11
 package com.kawamind;
 
+import com.kawamind.config.ConfigService;
+
+import jakarta.inject.Inject;
+import lombok.SneakyThrows;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.lib.ObjectId;
@@ -21,7 +25,6 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,7 +35,7 @@ import java.util.regex.Pattern;
 
 @Command(name = "releaseNoteGenerator", mixinStandardHelpOptions = true, version = "releaseNoteGenerator 0.1",
         description = "generate releaseNote for conventional commits")
-public class ReleaseNoteGenerator implements Callable<Integer> {
+public class ReleaseNoteGenerator implements Runnable {
 
     SimpleDateFormat spf = new SimpleDateFormat("dd/MM/yyyy");
 
@@ -50,6 +53,8 @@ public class ReleaseNoteGenerator implements Callable<Integer> {
     @CommandLine.ArgGroup(exclusive = false)
     BugTracker bugTracker;
 
+    ConfigService configService;
+
 
     static class BugTracker {
         @Option(description = "Issue id pattern (regex)", names = {"-p","--pattern"},required = true)
@@ -63,15 +68,14 @@ public class ReleaseNoteGenerator implements Callable<Integer> {
 
     private static int DEFAULT_MAX_VERSION = 5;
 
-
-
-    public static void main(String... args) {
-        int exitCode = new CommandLine(new ReleaseNoteGenerator()).execute(args);
-        System.exit(exitCode);
+    @Inject
+    public ReleaseNoteGenerator(ConfigService configService) {
+        this.configService = configService;
     }
 
+    @SneakyThrows
     @Override
-    public Integer call() throws Exception {
+    public void run()  {
         if(Objects.isNull(target))
             target = System.getProperty("user.dir");
         Path p = Path.of(target);
@@ -98,12 +102,7 @@ public class ReleaseNoteGenerator implements Callable<Integer> {
 
             Iterable<RevCommit> commits = null;
             final List<Ref> tagsList = allTags.stream().toList();
-            try {
-                commits = git.log().call();
-            }catch (NoHeadException e){
-                System.err.println("There is no commit in the repository");
-                return 1;
-            }
+            commits = git.log().call();
             var listedTag = new AtomicInteger(0);
             System.out.println("Tag existants : "+tagsList.size());
 
@@ -172,11 +171,9 @@ public class ReleaseNoteGenerator implements Callable<Integer> {
                 }
 
                 if(!givenTagReached.get() && (isPoinsonPill.apply(tag, td.releaseNoteForVersion.releasedVersion.version) || (Objects.isNull(tag) && listedTag.get()>=DEFAULT_MAX_VERSION))){//View : if the condition is true, switch to historic mode
-                    releasenote.println("""
-                    .Anciennes versions    
-                    [%collapsible]
-                    ====
-                        """);
+                    releasenote.println("."+configService.getHistorySectionTitle());
+                    releasenote.println("[%collapsible]");
+                    releasenote.println("====");
                     givenTagReached.set(Boolean.TRUE);
                 }
                 releasenote.println(versionStringAdoc(td.releaseNoteForVersion.releasedVersion.version,td.releaseNoteForVersion.releasedVersion.date,givenTagReached.get()));//display the version number
@@ -184,17 +181,17 @@ public class ReleaseNoteGenerator implements Callable<Integer> {
                 listedTag.getAndIncrement();
 
                 if(td.types.containsKey("feat")){
-                    releasenote.println(typeStringAdoc(firstTagReached.get())+"Features 💰");
+                    releasenote.println(typeStringAdoc(firstTagReached.get())+configService.getFeature());
                     td.types.get("feat").stream().forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get())+t));
                     releasenote.println();
                 }
                 if(td.types.containsKey("fix")){
-                    releasenote.println(typeStringAdoc(firstTagReached.get())+"Corrections 🩹");
+                    releasenote.println(typeStringAdoc(firstTagReached.get())+configService.getFix());
                     td.types.get("fix").stream().forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get())+t));
                     releasenote.println();
                 }
                 if(td.types.containsKey("refactor") || td.types.containsKey("perf")){
-                    releasenote.println(typeStringAdoc(firstTagReached.get())+"Refactorings 🚀");
+                    releasenote.println(typeStringAdoc(firstTagReached.get())+configService.getRefactor());
                     if(td.types.containsKey("refactor"))
                         td.types.get("refactor").stream().forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get())+t));
                     if(td.types.containsKey("perf"))
@@ -202,22 +199,22 @@ public class ReleaseNoteGenerator implements Callable<Integer> {
                     releasenote.println();
                 }
                 if(td.types.containsKey("build")){
-                    releasenote.println(typeStringAdoc(firstTagReached.get())+"Dépendances, versions, CI, etc. ⚙️");
+                    releasenote.println(typeStringAdoc(firstTagReached.get())+configService.getBuild());
                     td.types.get("build").stream().forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get())+t));
                     releasenote.println();
                 }
                 if(td.types.containsKey("ops")){
-                    releasenote.println(typeStringAdoc(firstTagReached.get())+"Infra, déploiement, etc. 📡");
+                    releasenote.println(typeStringAdoc(firstTagReached.get())+configService.getOps());
                     td.types.get("ops").stream().forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get())+t));
                     releasenote.println();
                 }
                 if(td.types.containsKey("styled")){
-                    releasenote.println(typeStringAdoc(firstTagReached.get())+"Style ✂️");
+                    releasenote.println(typeStringAdoc(firstTagReached.get())+configService.getStyle());
                     td.types.get("style").stream().forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get())+t));
                     releasenote.println();
                 }
                 if(td.types.containsKey("doc") || td.types.containsKey("docs")){
-                    releasenote.println(typeStringAdoc(firstTagReached.get())+"Documentation 📜");
+                    releasenote.println(typeStringAdoc(firstTagReached.get())+configService.getDoc());
                     if(td.types.containsKey("doc"))
                         td.types.get("doc").stream().forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get())+t));
                     if(td.types.containsKey("docs"))
@@ -239,7 +236,6 @@ public class ReleaseNoteGenerator implements Callable<Integer> {
             }
             releasenote.close();
         }
-        return 0;
     }
 
     Boolean hasTagMatchingCommit(Ref t,RevCommit u,Repository repo ) {
@@ -320,24 +316,6 @@ public class ReleaseNoteGenerator implements Callable<Integer> {
     public record ReleaseNoteForVersion(ReleasedVersion releasedVersion, List<RevCommit> commits){}
 
     public record ToDisplay(ReleaseNoteForVersion releaseNoteForVersion,Map<String,List<String>> types){}
-    /*
-     * API relevant changes
-
-    feat Commits, that adds or remove a new feature
-    fix Commits, that fixes a bug
-
-refactor Commits, that rewrite/restructure your code, however does not change any API behaviour
-
-    perf Commits are special refactor commits, that improve performance
-
-style Commits, that do not affect the meaning (white-space, formatting, missing semi-colons, etc)
-test Commits, that add missing tests or correcting existing tests
-docs Commits, that affect documentation only
-build Commits, that affect build components like build tool, ci pipeline, dependencies, project version, ...
-ops Commits, that affect operational components like infrastructure, deployment, backup, recovery, ...
-chore Miscellaneou
-     *
-     */
 
 
 }
