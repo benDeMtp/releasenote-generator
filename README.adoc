@@ -16,7 +16,7 @@ mvnw package
 .binary file
 [source,shell]
 ----
-mvnw package -Dnative
+mvnw package -Dnative -Dquarkus.native.container-build=true
 ----
 
 
