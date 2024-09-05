@@ -7,6 +7,7 @@
 package com.kawamind;
 
 import com.kawamind.config.ConfigService;
+import io.quarkus.qute.Template;
 import jakarta.inject.Inject;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -70,9 +71,12 @@ public class ReleaseNoteGenerator implements Runnable {
 
     private static final int DEFAULT_MAX_VERSION = 5;
 
+    Template releaseNote;
+
     @Inject
-    public ReleaseNoteGenerator(ConfigService configService) {
+    public ReleaseNoteGenerator(ConfigService configService, Template releaseNote) {
         this.configService = configService;
+        this.releaseNote = releaseNote;
     }
 
     @SneakyThrows
@@ -94,12 +98,7 @@ public class ReleaseNoteGenerator implements Runnable {
             var firstTagReached = new AtomicBoolean(Boolean.FALSE);
             var givenTagReached = new AtomicBoolean(Boolean.FALSE);
             try (var releasenote = new PrintWriter(new FileWriter(p.resolve(output).toFile(), false))) {
-                releasenote.println("""
-                        ==  Releases Note
-                        :toc:
-                        :toc-title: Versions récentes
-                                       
-                        """);
+
 
                 Iterable<RevCommit> commits;
                 final List<Ref> tagsList = allTags.stream().toList();
@@ -163,77 +162,71 @@ public class ReleaseNoteGenerator implements Runnable {
                     });
                     versionToDisplay.add(new ToDisplay(rnfv, commitsByType));
                 });
-
+                List<Version> lastVersions = new ArrayList<>();
+                List<Version> oldVersions = new ArrayList<>();
 
                 versionToDisplay.forEach((td) -> {
-                    if (firstTagReached.get()) {
-                        releasenote.println("");
-                    }
+                    var version = new Version();
 
                     if (!givenTagReached.get() && (isPoinsonPill.apply(tag, td.releaseNoteForVersion.releasedVersion.version) || (Objects.isNull(tag) && listedTag.get() >= DEFAULT_MAX_VERSION))) {//View : if the condition is true, switch to historic mode
-                        releasenote.println("." + configService.getHistorySectionTitle());
+                        /*releasenote.println("." + configService.getHistorySectionTitle());
                         releasenote.println("[%collapsible]");
-                        releasenote.println("====");
+                        releasenote.println("====");*/
                         givenTagReached.set(Boolean.TRUE);
+                        oldVersions.add(version);
+                    }else{
+                        lastVersions.add(version);
                     }
-                    releasenote.println(versionStringAdoc(td.releaseNoteForVersion.releasedVersion.version, td.releaseNoteForVersion.releasedVersion.date, givenTagReached.get()));//display the version number
+
+                    version.setName(td.releaseNoteForVersion.releasedVersion.version);
+                    version.setDate(td.releaseNoteForVersion.releasedVersion.date);
+                    //releasenote.println(versionStringAdoc(td.releaseNoteForVersion.releasedVersion.version, td.releaseNoteForVersion.releasedVersion.date, givenTagReached.get()));//display the version number
                     firstTagReached.set(Boolean.TRUE);
                     listedTag.getAndIncrement();
 
                     if (td.types.containsKey("feat")) {
-                        releasenote.println(typeStringAdoc(firstTagReached.get()) + configService.getFeature());
-                        td.types.get("feat").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
-                        releasenote.println();
+                        version.getFeatures().addAll(td.types.get("feat"));
                     }
                     if (td.types.containsKey("fix")) {
-                        releasenote.println(typeStringAdoc(firstTagReached.get()) + configService.getFix());
-                        td.types.get("fix").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
-                        releasenote.println();
+                        version.getFixes().addAll(td.types.get("fix"));
                     }
                     if (td.types.containsKey("refactor") || td.types.containsKey("perf")) {
-                        releasenote.println(typeStringAdoc(firstTagReached.get()) + configService.getRefactor());
+                        version.setRefactors(new ArrayList<>());
                         if (td.types.containsKey("refactor"))
-                            td.types.get("refactor").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
+                            version.getRefactors().addAll(td.types.get("refactor"));
                         if (td.types.containsKey("perf"))
-                            td.types.get("perf").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
-                        releasenote.println();
+                            version.getRefactors().addAll(td.types.get("perf"));
+                    }
+                    if (td.types.containsKey("test")) {
+                        version.getTests().addAll(td.types.get("test"));
                     }
                     if (td.types.containsKey("build")) {
-                        releasenote.println(typeStringAdoc(firstTagReached.get()) + configService.getBuild());
-                        td.types.get("build").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
-                        releasenote.println();
+                        version.getBuilds().addAll(td.types.get("build"));
                     }
                     if (td.types.containsKey("ops")) {
-                        releasenote.println(typeStringAdoc(firstTagReached.get()) + configService.getOps());
-                        td.types.get("ops").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
-                        releasenote.println();
+                        version.getOps().addAll(td.types.get("ops"));
                     }
-                    if (td.types.containsKey("styled")) {
-                        releasenote.println(typeStringAdoc(firstTagReached.get()) + configService.getStyle());
-                        td.types.get("style").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
-                        releasenote.println();
+                    if (td.types.containsKey("style")) {
+                        version.getStyles().addAll(td.types.get("style"));
                     }
                     if (td.types.containsKey("doc") || td.types.containsKey("docs")) {
-                        releasenote.println(typeStringAdoc(firstTagReached.get()) + configService.getDoc());
+                        version.setDocs(new ArrayList<>());
                         if (td.types.containsKey("doc"))
-                            td.types.get("doc").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
+                            version.getDocs().addAll(td.types.get("doc"));
                         if (td.types.containsKey("docs"))
-                            td.types.get("docs").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
-                        releasenote.println();
+                            version.getDocs().addAll(td.types.get("docs"));
                     }
                     if (td.types.containsKey("chore")) {
-                        releasenote.println(typeStringAdoc(firstTagReached.get()) + "Divers");
-                        td.types.get("chore").forEach(t -> releasenote.println(commitStringAdoc(firstTagReached.get()) + t));
-                        releasenote.println();
+                        version.getChores().addAll(td.types.get("chore"));
                     }
 
                 });
 
 
                 //fin de la release note
-                if (givenTagReached.get()) {
-                    releasenote.println("====");
-                }
+
+                releasenote.println(releaseNote.data("releasenote",new ReleaseNote(lastVersions,oldVersions)).render());
+
             }
         }
     }

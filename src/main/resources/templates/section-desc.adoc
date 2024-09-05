@@ -1,0 +1,5 @@
+* {title}
+{#for c in commits}
+** {c}
+{/for}
+

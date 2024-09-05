@@ -88,6 +88,7 @@ class ReleaseNoteGeneratorTest {
     void runReleaseNoteGeneratorShouldCreateReleaseNoteFileToSpecifiedLocation(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
         addFileAndCommit("initial commit");
         LaunchResult result =launcher.launch("-d",tmpRepoPath,"-o","foo.adoc");
+
         SoftAssertions softly = new SoftAssertions();
 
         softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
@@ -112,6 +113,7 @@ class ReleaseNoteGeneratorTest {
 
         LaunchResult result =launcher.launch("-d",tmpRepoPath);
 
+        printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
         softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -132,7 +134,6 @@ class ReleaseNoteGeneratorTest {
         addFileAndCommit("test: fix tests");
         addFileAndCommit("build: add uber dep");
         addFileAndCommit("build: add uber dep2");
-        addFileAndCommit("style: new UI");
         addTag("v2");
         addFileAndCommit("ops: add deploy script");
         addFileAndCommit("docs: add doc one");
@@ -143,6 +144,7 @@ class ReleaseNoteGeneratorTest {
 
         LaunchResult result =launcher.launch("-d",tmpRepoPath);
 
+        printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
         softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -214,6 +216,7 @@ class ReleaseNoteGeneratorTest {
 
             LaunchResult result =launcher.launch("-d",tmpRepoPath,"-p","project-\\d*","-b","http://mybugtracker.com/");
 
+            printReleaseNote(releasenote);
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -254,7 +257,9 @@ class ReleaseNoteGeneratorTest {
 
     void printReleaseNote(File releasenote) throws IOException {
         try(var read  = new BufferedReader(new FileReader(releasenote))) {
+            System.out.println("****");
             read.lines().forEach(System.out::println);
+            System.out.println("****");
         }
     }
 

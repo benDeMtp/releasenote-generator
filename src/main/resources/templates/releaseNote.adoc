@@ -1,0 +1,12 @@
+==  Releases Note
+:toc:
+:toc-title: Versions récentes
+
+
+{#include version-desc versions=releasenote.lastVersions collapsed=false /}
+{#if releasenote.olderVersions.size > 0 }
+.Anciennes versions
+[%collapsible]
+====
+{#include version-desc versions=releasenote.olderVersions collapsed=true /}
+===={/if}
