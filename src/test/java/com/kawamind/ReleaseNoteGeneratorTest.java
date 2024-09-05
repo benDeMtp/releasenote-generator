@@ -15,10 +15,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.junit.jupiter.api.*;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -154,6 +151,36 @@ class ReleaseNoteGeneratorTest {
 
     }
 
+    @Test
+    @DisplayName("release note should have an history section if there is more than 5 commits")
+    void releaseNoteShouldHaveAnHistorySectionIfThereIsMoreThan5Commits(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
+        var standard = new File("src/test/resources/with-history.adoc");
+        addFileAndCommit("fix: issue1");
+        addTag("v1");
+        addFileAndCommit("test: fix tests");
+        addTag("v2");
+        addFileAndCommit("ops: add deploy script");
+        addTag("v3");
+        addFileAndCommit("ops: add deploy script 2");
+        addTag("v4");
+        addFileAndCommit("ops: add deploy script 3");
+        addTag("v5");
+        addFileAndCommit("ops: add deploy script 4");
+        addTag("v6");
+        var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.adoc").toFile();
+
+
+        LaunchResult result =launcher.launch("-d",tmpRepoPath);
+
+        printReleaseNote(releasenote);
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
+        softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
+        softly.assertThat(releasenote).as("release note should have the same content as sample file").hasSameTextualContentAs(standard);
+        softly.assertAll();
+    }
+
     @Nested
     @DisplayName("Tests with bugtracker options")
     class BugTracker {
@@ -192,8 +219,6 @@ class ReleaseNoteGeneratorTest {
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
             softly.assertThat(releasenote).as("release note should have the same content as sample file").hasSameTextualContentAs(standard);
 
-            var read  = new BufferedReader(new FileReader(releasenote));
-            read.lines().forEach(System.out::println);
             softly.assertAll();
 
         }
@@ -226,4 +251,11 @@ class ReleaseNoteGeneratorTest {
 
         return repository;
     }
+
+    void printReleaseNote(File releasenote) throws IOException {
+        try(var read  = new BufferedReader(new FileReader(releasenote))) {
+            read.lines().forEach(System.out::println);
+        }
+    }
+
 }
