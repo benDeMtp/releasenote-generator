@@ -9,6 +9,7 @@ package com.kawamind;
 import com.kawamind.config.ConfigService;
 import jakarta.inject.Inject;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -33,9 +34,12 @@ import java.util.regex.Pattern;
 
 @Command(name = "releaseNoteGenerator", mixinStandardHelpOptions = true, version = "releaseNoteGenerator 0.1",
         description = "generate releaseNote for conventional commits")
+@Slf4j
 public class ReleaseNoteGenerator implements Runnable {
 
     final SimpleDateFormat spf = new SimpleDateFormat("dd/MM/yyyy");
+
+    final String typePattern = "^((build|fix|docs|doc|feat|refactor|style|test|chore|ops|perf)?\\(?([a-zA-Z0-9\\-\\s]*)\\)?:?(.*))$";
 
 
     @Option(description = "local git repository", names = {"-d", "--directory"})
@@ -84,10 +88,8 @@ public class ReleaseNoteGenerator implements Runnable {
 
 
         try (var git = Git.open(p.toFile())) {
-            var reached = new AtomicBoolean(Boolean.FALSE);
             List<Ref> allTags = new ArrayList<>(git.tagList().call().stream().toList());
             allTags.sort((o1, o2) -> o2.getName().compareTo(o1.getName()));
-
 
             var firstTagReached = new AtomicBoolean(Boolean.FALSE);
             var givenTagReached = new AtomicBoolean(Boolean.FALSE);
@@ -99,11 +101,11 @@ public class ReleaseNoteGenerator implements Runnable {
                                        
                         """);
 
-                Iterable<RevCommit> commits = null;
+                Iterable<RevCommit> commits;
                 final List<Ref> tagsList = allTags.stream().toList();
                 commits = git.log().call();
                 var listedTag = new AtomicInteger(0);
-                System.out.println("Tag existants : " + tagsList.size());
+                log.info("Tag existants : " + tagsList.size());
 
                 List<ReleaseNoteForVersion> versions2commit = new ArrayList<>();
                 AtomicReference<ReleasedVersion> currentVersion = new AtomicReference<>();
@@ -124,7 +126,7 @@ public class ReleaseNoteGenerator implements Runnable {
                 });
 
 
-                String typePattern = "^((build|fix|docs|doc|feat|refactor|style|test|chore|ops|perf)?\\(?([a-zA-Z0-9\\-\\s]*)\\)?:?(.*))$";
+
                 final Pattern pattern = Pattern.compile(typePattern);
                 final List<ToDisplay> versionToDisplay = new ArrayList<>();
                 versions2commit.forEach((rnfv) -> {
@@ -145,11 +147,11 @@ public class ReleaseNoteGenerator implements Runnable {
                                 Supplier<String> commitMessageSuplier2 = () -> (((precision != null && !precision.trim().isEmpty()) ? (handleCommitMessage(precision).trim() + " : ") : "") + commitMessageSupplier.get()).trim();
                                 if (commitMessageSuplier2.get() != null && !commitMessageSuplier2.get().isEmpty()) {
                                     commitsByType.get(type).add(commitMessageSuplier2.get());
-                                } else {
-                                    System.out.println("commitMessageSupplier " + commitMessageSupplier.get());
-                                    System.out.println("commitMessageSupplier2 " + commitMessageSuplier2.get());
-                                    System.out.println(commit.getShortMessage());
-                                    System.out.println(type + " / '" + precision + "' / " + commitmessage);
+                                } else if(log.isDebugEnabled()) {
+                                    log.debug("commitMessageSupplier " + commitMessageSupplier.get());
+                                    log.debug("commitMessageSupplier2 " + commitMessageSuplier2.get());
+                                    log.debug(commit.getShortMessage());
+                                    log.debug(type + " / '" + precision + "' / " + commitmessage);
                                 }
                             } catch (Exception e) {
                                 System.out.println("there is an issue with " + commit.getShortMessage());
