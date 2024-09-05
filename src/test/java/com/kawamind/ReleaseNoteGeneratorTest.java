@@ -15,14 +15,15 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.junit.jupiter.api.*;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusMainTest
 @Slf4j
@@ -31,10 +32,10 @@ class ReleaseNoteGeneratorTest {
     Repository tmpRepo;
     String tmpRepoPath;
 
-    PersonIdent personIdent = new PersonIdent("Bill","bill@ggamil.foo",LocalDate.parse("2018-05-05").atStartOfDay().toInstant(ZoneOffset.UTC), ZoneId.of("UTC"));
+    final PersonIdent personIdent = new PersonIdent("Bill","bill@ggamil.foo",LocalDate.parse("2018-05-05").atStartOfDay().toInstant(ZoneOffset.UTC), ZoneId.of("UTC"));
 
     @BeforeEach
-    void setUp() throws IOException, GitAPIException {
+    void setUp() throws IOException {
         tmpRepo = createNewRepository();
         tmpRepoPath = tmpRepo.getDirectory().getAbsolutePath();
     }
@@ -160,11 +161,9 @@ class ReleaseNoteGeneratorTest {
         @Test
         @DisplayName("should failed if -b and -p are not in the command line")
         void shouldFailedIfDependentOptionsAreNotSet(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
-            var standard = new File("src/test/resources/without-convention.adoc");
             addFileAndCommit("fix(project-1): big error");
             addFileAndCommit("feat(project-2): awesome feature");
             addTag("v1");
-            var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.adoc").toFile();
 
             LaunchResult result =launcher.launch("-d",tmpRepoPath,"-p","project-\\d*");
 
@@ -194,7 +193,7 @@ class ReleaseNoteGeneratorTest {
             softly.assertThat(releasenote).as("release note should have the same content as sample file").hasSameTextualContentAs(standard);
 
             var read  = new BufferedReader(new FileReader(releasenote));
-            read.lines().forEach(line-> System.out.println(line));
+            read.lines().forEach(System.out::println);
             softly.assertAll();
 
         }
@@ -207,7 +206,7 @@ class ReleaseNoteGeneratorTest {
 
     @AfterEach
     void tearDown() {
-        tmpRepo.getDirectory().delete();
+        var unused = tmpRepo.getDirectory().delete();
     }
 
     private static Repository createNewRepository() throws IOException {

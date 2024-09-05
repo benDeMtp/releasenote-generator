@@ -6,7 +6,7 @@ import picocli.CommandLine;
 public class CustomExceptionHandler implements CommandLine.IExecutionExceptionHandler {
 
     @Override
-    public int handleExecutionException(Exception ex, CommandLine commandLine, CommandLine.ParseResult fullParseResult) throws Exception {
+    public int handleExecutionException(Exception ex, CommandLine commandLine, CommandLine.ParseResult fullParseResult) {
 
         if(ex instanceof NoHeadException){
             System.err.println("There is no commit in the repository");
