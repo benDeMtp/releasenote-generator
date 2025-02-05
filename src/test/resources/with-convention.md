@@ -1,0 +1,30 @@
+##  Releases Note
+
+### Version : v3 (05/05/2018)
+- Refactorings 🚀
+    - to the sky
+
+- Infra, déploiement, etc. 📡
+    - add deploy script
+
+- Documentation 📜
+    - add doc two
+    - add doc one
+
+### Version : v2 (05/05/2018)
+- Tests 🤖
+    - fix tests
+
+- Dépendances, versions, CI, etc. ⚙️
+    - add uber dep2
+    - add uber dep
+
+### Version : v1 (05/05/2018)
+- Features 💰
+    - add awesome feature
+
+- Corrections 🩹
+    - issue2
+    - issue1
+
+

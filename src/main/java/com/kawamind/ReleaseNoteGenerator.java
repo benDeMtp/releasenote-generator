@@ -7,6 +7,8 @@
 package com.kawamind;
 
 import com.kawamind.config.ConfigService;
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import jakarta.inject.Inject;
 import lombok.SneakyThrows;
@@ -20,6 +22,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -47,11 +50,14 @@ public class ReleaseNoteGenerator implements Runnable {
     @Option(description = "local git repository", names = {"-d", "--directory"})
     private String target;
 
-    @Option(description = "file relative path where the release note will be writen", names = {"-o", "--output"}, defaultValue = "release-note.adoc")
+    @Option(description = "relative file path where the release note will be written", names = {"-o", "--output"}, defaultValue = "release-note.adoc")
     private String output;
 
     @Option(description = "Tag name", names = {"-t", "--tags"})
     private String tag;
+
+    @Option(names={"-f","--output-format"}, description = "the format of the generated file : ${COMPLETION-CANDIDATES}")
+    private OutputFormat format;
 
 
     @CommandLine.ArgGroup(exclusive = false)
@@ -72,12 +78,12 @@ public class ReleaseNoteGenerator implements Runnable {
 
     private static final int DEFAULT_MAX_VERSION = 5;
 
-    Template releaseNote;
+    Engine engine;
 
     @Inject
-    public ReleaseNoteGenerator(ConfigService configService, Template releaseNote) {
+    public ReleaseNoteGenerator(ConfigService configService, Engine engine) {
         this.configService = configService;
-        this.releaseNote = releaseNote;
+        this.engine = engine;
     }
 
     @SneakyThrows
@@ -85,21 +91,19 @@ public class ReleaseNoteGenerator implements Runnable {
     public void run() {
         if (Objects.isNull(target))
             target = System.getProperty("user.dir");
-        Path p = Path.of(target);
+        Path gitDirectoryPath = Path.of(target);
 
         if (!Objects.isNull(bugTracker) && !Objects.isNull(bugTracker.issueIdPattern)) {
             issueKey = Pattern.compile(bugTracker.issueIdPattern, Pattern.CASE_INSENSITIVE);
         }
 
 
-        try (var git = Git.open(p.toFile())) {
+        try (var git = Git.open(gitDirectoryPath.toFile())) {
             List<Ref> allTags = new ArrayList<>(git.tagList().call().stream().toList());
             allTags.sort((o1, o2) -> o2.getName().compareTo(o1.getName()));
 
             var firstTagReached = new AtomicBoolean(Boolean.FALSE);
             var givenTagReached = new AtomicBoolean(Boolean.FALSE);
-            try (var releasenote = new PrintWriter(new FileWriter(p.resolve(output).toFile(), false))) {
-
 
                 Iterable<RevCommit> commits;
                 final List<Ref> tagsList = allTags.stream().toList();
@@ -170,9 +174,6 @@ public class ReleaseNoteGenerator implements Runnable {
                     var version = new Version();
 
                     if (!givenTagReached.get() && (isPoinsonPill.apply(tag, td.releaseNoteForVersion.releasedVersion.version) || (Objects.isNull(tag) && listedTag.get() >= DEFAULT_MAX_VERSION))) {//View : if the condition is true, switch to historic mode
-                        /*releasenote.println("." + configService.getHistorySectionTitle());
-                        releasenote.println("[%collapsible]");
-                        releasenote.println("====");*/
                         givenTagReached.set(Boolean.TRUE);
                         oldVersions.add(version);
                     }else{
@@ -181,7 +182,6 @@ public class ReleaseNoteGenerator implements Runnable {
 
                     version.setName(td.releaseNoteForVersion.releasedVersion.version);
                     version.setDate(td.releaseNoteForVersion.releasedVersion.date);
-                    //releasenote.println(versionStringAdoc(td.releaseNoteForVersion.releasedVersion.version, td.releaseNoteForVersion.releasedVersion.date, givenTagReached.get()));//display the version number
                     firstTagReached.set(Boolean.TRUE);
                     listedTag.getAndIncrement();
 
@@ -223,13 +223,22 @@ public class ReleaseNoteGenerator implements Runnable {
 
                 });
 
-
-                //fin de la release note
-
-                releasenote.println(releaseNote.data("releasenote",new ReleaseNote(lastVersions,oldVersions)).render());
-
-            }
+                print(format,lastVersions,oldVersions,gitDirectoryPath.resolve(output));
         }
+    }
+
+    void print(OutputFormat format,List<Version> lastVersions,List<Version> oldVersions,Path outputPath) throws IOException {
+        try (var releasenote = new PrintWriter(new FileWriter(outputPath.toFile(), false))) {
+            releasenote.println(getTemplateByFormat(format).data("releasenote",new ReleaseNote(lastVersions,oldVersions)).render());
+        }
+    }
+
+    Template getTemplateByFormat(OutputFormat format) {
+        return switch (format){
+            case null -> engine.getTemplate("adoc/releaseNote.adoc");
+            case ADOC ->  engine.getTemplate("adoc/releaseNote.adoc");
+            case MARKDOWN -> engine.getTemplate("md/releaseNote.md");
+        };
     }
 
     Boolean hasTagMatchingCommit(Ref t, RevCommit u, Repository repo) {
@@ -284,18 +293,6 @@ public class ReleaseNoteGenerator implements Runnable {
         return message;
     }
 
-
-    String versionStringAdoc(String version, String date, boolean collapsibleBlock) {
-        return (collapsibleBlock ? "" : "=== ") + "Version : " + version + " (" + date + ")" + (collapsibleBlock ? "\n" : "");
-    }
-
-    String typeStringAdoc(boolean collapsibleBlock) {
-        return (collapsibleBlock ? "* " : "==== ");
-    }
-
-    String commitStringAdoc(boolean collapsibleBlock) {
-        return (collapsibleBlock ? "** " : "- ");
-    }
 
     public record ReleasedVersion(String version, String date) {
     }

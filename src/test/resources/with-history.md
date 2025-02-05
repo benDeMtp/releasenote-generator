@@ -1,0 +1,30 @@
+##  Releases Note
+
+### Version : v6 (05/05/2018)
+- Infra, déploiement, etc. 📡
+    - add deploy script 4
+
+### Version : v5 (05/05/2018)
+- Infra, déploiement, etc. 📡
+    - add deploy script 3
+
+### Version : v4 (05/05/2018)
+- Infra, déploiement, etc. 📡
+    - add deploy script 2
+
+### Version : v3 (05/05/2018)
+- Infra, déploiement, etc. 📡
+    - add deploy script
+
+### Version : v2 (05/05/2018)
+- Tests 🤖
+    - fix tests
+
+<details>
+<summary>Anciennes versions</summary>
+
+Version : v1 (05/05/2018)
+- Corrections 🩹
+    - issue1
+
+</details>
