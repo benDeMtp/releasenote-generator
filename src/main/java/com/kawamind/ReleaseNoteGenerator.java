@@ -21,6 +21,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -237,9 +238,13 @@ public class ReleaseNoteGenerator implements Runnable {
     }
 
     private ObjectId getActualRefObjectId(Ref ref, Repository repo) {
-        final Ref repoPeeled = repo.peel(ref);
-        if (repoPeeled.getPeeledObjectId() != null) {
-            return repoPeeled.getPeeledObjectId();
+        try {
+            final Ref repoPeeled = repo.getRefDatabase().peel(ref);
+            if (repoPeeled.getPeeledObjectId() != null) {
+                return repoPeeled.getPeeledObjectId();
+            }
+        } catch (IOException e) {
+            log.debug("",e);
         }
         return ref.getObjectId();
     }
