@@ -1,13 +1,17 @@
 package com.kawamind;
 
+
+import lombok.Getter;
+
+@Getter
 public enum OutputFormat {
-    ADOC("asciidoc"),
-    MARKDOWN("markdown");
+    ADOC("adoc"),
+    MARKDOWN("md");
 
-    final String description;
+    final String extension;
 
-    OutputFormat(String description) {
-        this.description = description;
+    OutputFormat(String extension) {
+        this.extension = extension;
     }
 
 }

@@ -77,7 +77,7 @@ class ReleaseNoteGeneratorTest {
 
         softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
         softly.assertThat(tmpRepo.getDirectory()).as("Directory should exists").exists();
-        softly.assertThat(new File(tmpRepo.getDirectory().getAbsolutePath(),"release-note.adoc")).as("default releasenote file should exists").exists();
+        softly.assertThat(new File(tmpRepo.getDirectory().getAbsolutePath(),ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+".adoc")).as("default releasenote file should exists").exists();
 
         softly.assertAll();
 
@@ -110,7 +110,7 @@ class ReleaseNoteGeneratorTest {
         addFileAndCommit("Commit 3");
         addFileAndCommit("Commit 4");
         addTag("v2");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.adoc").toFile();
+        var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+".adoc").toFile();
 
         LaunchResult result =launcher.launch("-d",tmpRepoPath);
 
@@ -141,9 +141,9 @@ class ReleaseNoteGeneratorTest {
         addFileAndCommit("doc: add doc two");
         addFileAndCommit("perf: to the sky");
         addTag("v3");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.md").toFile();
+        var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+OutputFormat.MARKDOWN.getExtension()).toFile();
 
-        LaunchResult result =launcher.launch("-d",tmpRepoPath,"-o","release-note.md","-f","MARKDOWN");
+        LaunchResult result =launcher.launch("-d",tmpRepoPath,"-f","MARKDOWN");
 
         printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
@@ -170,10 +170,10 @@ class ReleaseNoteGeneratorTest {
         addTag("v5");
         addFileAndCommit("ops: add deploy script 4");
         addTag("v6");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.md").toFile();
+        var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+OutputFormat.MARKDOWN.getExtension()).toFile();
 
 
-        LaunchResult result =launcher.launch("-d",tmpRepoPath,"-o","release-note.md","-f","MARKDOWN");
+        LaunchResult result =launcher.launch("-d",tmpRepoPath,"-f","MARKDOWN");
 
         printReleaseNote(releasenote);
 
@@ -196,9 +196,9 @@ class ReleaseNoteGeneratorTest {
         addFileAndCommit("Commit 3");
         addFileAndCommit("Commit 4");
         addTag("v2");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.md").toFile();
+        var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+OutputFormat.MARKDOWN.getExtension()).toFile();
 
-        LaunchResult result =launcher.launch("-d",tmpRepoPath,"-o","release-note.md","-f","MARKDOWN");
+        LaunchResult result =launcher.launch("-d",tmpRepoPath,"-f","MARKDOWN");
 
         printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
@@ -227,7 +227,7 @@ class ReleaseNoteGeneratorTest {
         addFileAndCommit("doc: add doc two");
         addFileAndCommit("perf: to the sky");
         addTag("v3");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.adoc").toFile();
+        var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+OutputFormat.ADOC.getExtension()).toFile();
 
         LaunchResult result =launcher.launch("-d",tmpRepoPath);
 
@@ -256,7 +256,7 @@ class ReleaseNoteGeneratorTest {
         addTag("v5");
         addFileAndCommit("ops: add deploy script 4");
         addTag("v6");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.adoc").toFile();
+        var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+OutputFormat.ADOC.getExtension()).toFile();
 
 
         LaunchResult result =launcher.launch("-d",tmpRepoPath);
@@ -302,7 +302,7 @@ class ReleaseNoteGeneratorTest {
             addFileAndCommit("fix(project-1): big error");
             addFileAndCommit("feat(project-2): awesome feature");
             addTag("v1");
-            var releasenote = tmpRepo.getDirectory().toPath().resolve("release-note.adoc").toFile();
+            var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+OutputFormat.ADOC.getExtension()).toFile();
 
             LaunchResult result =launcher.launch("-d",tmpRepoPath,"-p","project-\\d*","-b","http://mybugtracker.com/");
 

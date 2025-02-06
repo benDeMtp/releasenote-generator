@@ -50,13 +50,15 @@ public class ReleaseNoteGenerator implements Runnable {
     @Option(description = "local git repository", names = {"-d", "--directory"})
     private String target;
 
-    @Option(description = "relative file path where the release note will be written", names = {"-o", "--output"}, defaultValue = "release-note.adoc")
+    @Option(description = "relative file path where the release note will be written", names = {"-o", "--output"})
     private String output;
+
+    static final String DEFAULT_OUTPUT_FILE_NAME_PREFIX="CHANGELOG";
 
     @Option(description = "Tag name", names = {"-t", "--tags"})
     private String tag;
 
-    @Option(names={"-f","--output-format"}, description = "the format of the generated file : ${COMPLETION-CANDIDATES}")
+    @Option(names={"-f","--output-format"}, description = "the format of the generated file : ${COMPLETION-CANDIDATES}", defaultValue = "ADOC")
     private OutputFormat format;
 
 
@@ -223,6 +225,9 @@ public class ReleaseNoteGenerator implements Runnable {
 
                 });
 
+                if(output==null){
+                    output=DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+format.getExtension();
+                }
                 print(format,lastVersions,oldVersions,gitDirectoryPath.resolve(output));
         }
     }
