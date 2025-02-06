@@ -1,6 +1,6 @@
 package com.kawamind;
 
-import lombok.Builder;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,6 +9,7 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
+@RegisterForReflection
 public class Version {
 
     String name;
