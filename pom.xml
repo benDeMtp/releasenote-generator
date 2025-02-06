@@ -19,7 +19,7 @@
         <surefire-plugin.version>3.5.3</surefire-plugin.version>
         <quarkus-jgit.version>3.4.1</quarkus-jgit.version>
         <lombok.version>1.18.38</lombok.version>
-        <assertj-core.version>3.26.3</assertj-core.version>
+        <assertj-core.version>3.27.3</assertj-core.version>
     </properties>
 
     <dependencyManagement>
