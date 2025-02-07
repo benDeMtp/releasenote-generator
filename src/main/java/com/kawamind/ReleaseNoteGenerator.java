@@ -6,29 +6,17 @@
 //DEPS org.slf4j:slf4j-simple:2.0.11
 package com.kawamind;
 
-import com.kawamind.config.ConfigService;
-import io.quarkus.qute.Engine;
-import io.quarkus.qute.Location;
-import io.quarkus.qute.Template;
-import jakarta.inject.Inject;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,6 +24,23 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+
+import com.kawamind.config.ConfigService;
+
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.Template;
+import jakarta.inject.Inject;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 @Command(name = "releaseNoteGenerator", mixinStandardHelpOptions = true, version = "releaseNoteGenerator 0.1",
         description = "generate releaseNote for conventional commits")
@@ -149,8 +154,8 @@ public class ReleaseNoteGenerator implements Runnable {
                                 commitsByType.put(type, new ArrayList<>());
                             }
                             try {
-                                Supplier<String> commitMessageSupplier = () -> commitmessage.trim().isEmpty() ? "" : handleCommitMessage(commitmessage).trim();
-                                Supplier<String> commitMessageSuplier2 = () -> (((precision != null && !precision.trim().isEmpty()) ? (handleCommitMessage(precision).trim() + " : ") : "") + commitMessageSupplier.get()).trim();
+                                Supplier<String> commitMessageSupplier = () -> commitmessage.trim().isEmpty() ? "" : parseCommitMessage(commitmessage,format).trim();
+                                Supplier<String> commitMessageSuplier2 = () -> (((precision != null && !precision.trim().isEmpty()) ? (parseCommitMessage(precision,format).trim() + " : ") : "") + commitMessageSupplier.get()).trim();
                                 if (commitMessageSuplier2.get() != null && !commitMessageSuplier2.get().isEmpty()) {
                                     commitsByType.get(type).add(commitMessageSuplier2.get());
                                 } else if(log.isDebugEnabled()) {
@@ -297,6 +302,27 @@ public class ReleaseNoteGenerator implements Runnable {
         }
         return message;
     }
+
+    String parseCommitMessage(String message,OutputFormat format) {
+        if (issueKey != null && bugTracker.url != null) {
+            var m = issueKey.matcher(message);
+            if (m.find()) {
+                var issueId = m.group(0);
+                return m.replaceFirst(issueToLink(issueId, format));
+            }
+        }
+        return message;
+    }
+
+    String issueToLink(String issueId, OutputFormat format){
+        var template = switch (format) {
+            case ADOC -> engine.getTemplate("adoc/bugtracker-link.adoc");
+            case MARKDOWN -> engine.getTemplate("md/bugtracker-link.md");
+                
+        };
+        return template.data("bugTrackerUrl", bugTracker.url, "issueId", issueId).render();
+    }
+
 
 
     public record ReleasedVersion(String version, String date) {
