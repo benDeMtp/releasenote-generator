@@ -296,8 +296,8 @@ class ReleaseNoteGeneratorTest {
         }
 
         @Test
-        @DisplayName("release note should respect without-bugtracker.adoc")
-        void releaseNoteShouldRespectTemplate1(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
+        @DisplayName("release note should respect with-bugtracker.adoc")
+        void releaseNoteWithBugTrackerShouldRespectTemplateADOC(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
             var standard = new File("src/test/resources/with-bugtracker.adoc");
             addFileAndCommit("fix(project-1): big error");
             addFileAndCommit("feat(project-2): awesome feature");
@@ -305,6 +305,27 @@ class ReleaseNoteGeneratorTest {
             var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+OutputFormat.ADOC.getExtension()).toFile();
 
             LaunchResult result =launcher.launch("-d",tmpRepoPath,"-p","project-\\d*","-b","http://mybugtracker.com/");
+
+            printReleaseNote(releasenote);
+            SoftAssertions softly = new SoftAssertions();
+            softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
+            softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
+            softly.assertThat(releasenote).as("release note should have the same content as sample file").hasSameTextualContentAs(standard);
+
+            softly.assertAll();
+
+        }
+
+        @Test
+        @DisplayName("release note should respect with-bugtracker.md")
+        void releaseNoteWithBugTrackerShouldRespectTemplateMD(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
+            var standard = new File("src/test/resources/with-bugtracker.md");
+            addFileAndCommit("fix(project-1): big error");
+            addFileAndCommit("feat(project-2): awesome feature");
+            addTag("v1");
+            var releasenote = tmpRepo.getDirectory().toPath().resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX+"."+OutputFormat.MARKDOWN.getExtension()).toFile();
+
+            LaunchResult result =launcher.launch("-d",tmpRepoPath,"-p","project-\\d*","-b","http://mybugtracker.com/","-f",OutputFormat.MARKDOWN.name());
 
             printReleaseNote(releasenote);
             SoftAssertions softly = new SoftAssertions();
