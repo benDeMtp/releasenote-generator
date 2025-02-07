@@ -1,12 +1,10 @@
 package com.kawamind;
 
-
 import lombok.Getter;
 
 @Getter
 public enum OutputFormat {
-    ADOC("adoc"),
-    MARKDOWN("md");
+    ADOC("adoc"), MARKDOWN("md");
 
     final String extension;
 
