@@ -41,6 +41,8 @@ import picocli.CommandLine.Option;
 @Slf4j
 public class ReleaseNoteGenerator implements Runnable {
 
+    private static final String[] COMMON_FILTER_STRINGS = { "Merge branch", "releasenote" };
+
     final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault());
 
     final String typePattern = "^((build|fix|docs|doc|feat|refactor|style|test|chore|ops|perf)?\\(?([a-zA-Z0-9\\-\\s]*)\\)?:?(.*))$";
@@ -59,6 +61,12 @@ public class ReleaseNoteGenerator implements Runnable {
     @Option(names = { "-f",
             "--output-format" }, description = "the format of the generated file : ${COMPLETION-CANDIDATES}", defaultValue = "ADOC")
     private OutputFormat format;
+
+    @Option(names = { "-e",
+            "--exclude-patterns" }, description = "A list of string like release,skip-ci,etc. Commit messages with one of these string are ignored")
+    private String patternToExclude;
+
+    List<String> allExclusionPatterns = new ArrayList<>();
 
     @CommandLine.ArgGroup(exclusive = false)
     BugTracker bugTracker;
@@ -88,6 +96,8 @@ public class ReleaseNoteGenerator implements Runnable {
     @SneakyThrows
     @Override
     public void run() {
+        initExclusionFilter();
+
         if (Objects.isNull(target))
             target = System.getProperty("user.dir");
         Path gitDirectoryPath = Path.of(target);
@@ -243,6 +253,12 @@ public class ReleaseNoteGenerator implements Runnable {
         }
     }
 
+    void initExclusionFilter() {
+        allExclusionPatterns.addAll(Arrays.asList(COMMON_FILTER_STRINGS));
+        if (patternToExclude != null)
+            allExclusionPatterns.addAll(Arrays.asList(patternToExclude.split(",")));
+    }
+
     void print(OutputFormat format, List<Version> lastVersions, List<Version> oldVersions, Path outputPath)
             throws IOException {
         try (var releasenote = new PrintWriter(new FileWriter(outputPath.toFile(), false))) {
@@ -278,11 +294,9 @@ public class ReleaseNoteGenerator implements Runnable {
 
     Pattern oldReleasePattern = Pattern.compile("^release\\s\\d(\\.\\d{1,3}){1,2}.*$");
 
-    String[] filteredMessage = { "Merge branch", "releasenote" };
-
     Predicate<String> messageFilter = messageToTest -> {
 
-        if (Arrays.stream(filteredMessage).anyMatch(messageToTest::contains)) {
+        if (allExclusionPatterns.stream().anyMatch(messageToTest::contains)) {
             return false;
         } else {
 
