@@ -59,7 +59,7 @@ public class ReleaseNoteGenerator implements Runnable {
     private String tag;
 
     @Option(names = { "-f",
-            "--output-format" }, description = "the format of the generated file : ${COMPLETION-CANDIDATES}", defaultValue = "ADOC")
+            "--output-format" }, description = "the format of the generated file : ${COMPLETION-CANDIDATES}", defaultValue = "MARKDOWN")
     private OutputFormat format;
 
     @Option(names = { "-e",

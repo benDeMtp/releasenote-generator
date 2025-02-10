@@ -81,7 +81,7 @@ class ReleaseNoteGeneratorTest {
         softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
         softly.assertThat(tmpRepo.getDirectory()).as("Directory should exists").exists();
         softly.assertThat(new File(tmpRepo.getDirectory().getAbsolutePath(),
-                ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".adoc"))
+                ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".md"))
                 .as("default releasenote file should exists").exists();
 
         softly.assertAll();
@@ -119,7 +119,7 @@ class ReleaseNoteGeneratorTest {
         var releasenote = tmpRepo.getDirectory().toPath()
                 .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".adoc").toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath);
+        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-f",OutputFormat.ADOC.name());
 
         printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
@@ -139,7 +139,7 @@ class ReleaseNoteGeneratorTest {
         addFileAndCommit("Commit 1");
         addFileAndCommit("Commit 2");
         addFileAndCommit("unwanted Commit 3");
-        addFileAndCommit("[skip-ci] Commit 4");
+        addFileAndCommit("doc([skip-ci]) Commit 4");
         addFileAndCommit("doc: update releasenote");
         addTag("v1");
         addFileAndCommit("Commit 3");
@@ -148,7 +148,7 @@ class ReleaseNoteGeneratorTest {
         var releasenote = tmpRepo.getDirectory().toPath()
                 .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".adoc").toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-e","unwanted,skip-ci");
+        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-e","unwanted,skip-ci","-f",OutputFormat.ADOC.name());
 
         printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
@@ -183,7 +183,7 @@ class ReleaseNoteGeneratorTest {
                 .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.ADOC.getExtension())
                 .toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath);
+        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-f",OutputFormat.ADOC.name());
 
         printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
@@ -216,7 +216,7 @@ class ReleaseNoteGeneratorTest {
                 .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.ADOC.getExtension())
                 .toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath);
+        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-f",OutputFormat.ADOC.name());
 
         printReleaseNote(releasenote);
 
@@ -283,7 +283,7 @@ class ReleaseNoteGeneratorTest {
                 ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.MARKDOWN.getExtension())
                 .toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", "MARKDOWN");
+        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.MARKDOWN.name());
 
         printReleaseNote(releasenote);
 
@@ -309,7 +309,7 @@ class ReleaseNoteGeneratorTest {
                 ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.MARKDOWN.getExtension())
                 .toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", "MARKDOWN");
+        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.MARKDOWN.name());
 
         printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
@@ -358,7 +358,7 @@ class ReleaseNoteGeneratorTest {
                     .toFile();
 
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-p", "project-\\d*", "-b",
-                    "http://mybugtracker.com/");
+                    "http://mybugtracker.com/","-f",OutputFormat.ADOC.name());
 
             printReleaseNote(releasenote);
             SoftAssertions softly = new SoftAssertions();
