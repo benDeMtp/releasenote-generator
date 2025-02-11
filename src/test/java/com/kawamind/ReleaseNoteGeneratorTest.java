@@ -1,9 +1,20 @@
 package com.kawamind;
 
-import io.quarkus.test.junit.main.LaunchResult;
-import io.quarkus.test.junit.main.QuarkusMainLauncher;
-import io.quarkus.test.junit.main.QuarkusMainTest;
-import lombok.extern.slf4j.Slf4j;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.UUID;
+import java.util.stream.Stream;
+
 import org.assertj.core.api.SoftAssertions;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CommitCommand;
@@ -13,14 +24,23 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.UUID;
+import com.kawamind.ReleaseNoteGenerator.ChangeLogLine;
+import com.kawamind.config.ConfigService;
+
+import io.quarkus.qute.Engine;
+import io.quarkus.test.junit.main.LaunchResult;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
+import jakarta.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
 
 @QuarkusMainTest
 @Slf4j
@@ -29,6 +49,12 @@ class ReleaseNoteGeneratorTest {
     Repository tmpRepo;
     String tmpRepoPath;
 
+    @Inject
+    Engine engine;
+
+    @Inject
+    ConfigService configService;
+
     final PersonIdent personIdent = new PersonIdent("Bill", "bill@ggamil.foo",
             LocalDate.parse("2018-05-05").atStartOfDay().toInstant(ZoneOffset.UTC), ZoneId.of("UTC"));
 
@@ -36,6 +62,32 @@ class ReleaseNoteGeneratorTest {
     void setUp() throws IOException {
         tmpRepo = createNewRepository();
         tmpRepoPath = tmpRepo.getDirectory().getAbsolutePath();
+    }
+
+
+    record MessageExpectation(String initialMessage,OutputFormat outputFormat,ChangeLogLine result){};
+
+    static Stream<MessageExpectation> testHandleCommitTitle(){
+        return Stream.of(
+                new MessageExpectation("build(context1):test1", OutputFormat.MARKDOWN, new ChangeLogLine("build", "context1 : test1")),
+                new MessageExpectation("bla: unexpected type", OutputFormat.MARKDOWN, new ChangeLogLine("chore", "bla : unexpected type")),
+                new MessageExpectation("without convention", OutputFormat.MARKDOWN, new ChangeLogLine("chore", "without convention")),
+                new MessageExpectation("test: thisTest", OutputFormat.MARKDOWN, new ChangeLogLine("test", "thisTest")),
+                new MessageExpectation("without convention", OutputFormat.MARKDOWN, new ChangeLogLine("chore", "without convention")));
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void testHandleCommitTitle(MessageExpectation expectation) {
+        var releaseNote = new ReleaseNoteGenerator(configService, engine);
+
+        var result = releaseNote.handleCommitTitle(expectation.initialMessage, expectation.outputFormat);
+        assertAll(
+                ()->assertTrue(result.isPresent(),"Changelog should be present"),
+        ()->assertEquals(expectation.result.message(), result.get().message(),"Chanhelog message should be equals"),
+        ()->assertEquals(expectation.result.type(), result.get().type(),"Changelog type shouldbe equals"));
+
+
     }
 
     void addFileAndCommit(String message) throws IOException, GitAPIException {
@@ -148,7 +200,7 @@ class ReleaseNoteGeneratorTest {
         var releasenote = tmpRepo.getDirectory().toPath()
                 .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".adoc").toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-e","unwanted,skip-ci","-f",OutputFormat.ADOC.name());
+        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-e", "unwanted,skip-ci","-f",OutputFormat.ADOC.name());
 
         printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
