@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,7 +46,9 @@ public class ReleaseNoteGenerator implements Runnable {
 
     final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault());
 
-    final String typePattern = "^((build|fix|docs|doc|feat|refactor|style|test|chore|ops|perf)?\\(?([a-zA-Z0-9\\-\\s]*)\\)?:?(.*))$";
+    final static String typePattern = "^(((build|fix|docs|doc|feat|refactor|style|test|chore|ops|perf)?\\(?([a-zA-Z0-9\\-\\s]*)\\)?:)?(.*))$";
+
+    final static Pattern pattern = Pattern.compile(typePattern);
 
     @Option(description = "local git repository", names = { "-d", "--directory" })
     private String target;
@@ -147,41 +150,24 @@ public class ReleaseNoteGenerator implements Runnable {
                     versions2commit.get(currentVersionId.get()).commits.add(currentCommit);
             });
 
-            final Pattern pattern = Pattern.compile(typePattern);
+            
             final List<ToDisplay> versionToDisplay = new ArrayList<>();
             versions2commit.forEach((rnfv) -> {
                 final Map<String, List<String>> commitsByType = new HashMap<>();
                 rnfv.commits.forEach(commit -> {
-                    var m = pattern.matcher(commit.getShortMessage());
-                    if (m.find()) {
-                        var type = m.group(2) != null ? m.group(2) : "chore";
-                        var precision = m.group(3);
-                        var commitmessage = type != null ? m.group(4) : (m.group(3) != null ? m.group(3) : "");
-
-                        if (!commitsByType.containsKey(type)) {
-                            commitsByType.put(type, new ArrayList<>());
-                        }
-                        try {
-                            Supplier<String> commitMessageSupplier = () -> commitmessage.trim().isEmpty() ? ""
-                                    : parseCommitMessage(commitmessage, format).trim();
-                            Supplier<String> commitMessageSuplier2 = () -> (((precision != null
-                                    && !precision.trim().isEmpty())
-                                            ? (parseCommitMessage(precision, format).trim() + " : ") : "")
-                                    + commitMessageSupplier.get()).trim();
-                            if (commitMessageSuplier2.get() != null && !commitMessageSuplier2.get().isEmpty()) {
-                                commitsByType.get(type).add(commitMessageSuplier2.get());
-                            } else if (log.isDebugEnabled()) {
-                                log.debug("commitMessageSupplier " + commitMessageSupplier.get());
-                                log.debug("commitMessageSupplier2 " + commitMessageSuplier2.get());
-                                log.debug(commit.getShortMessage());
-                                log.debug(type + " / '" + precision + "' / " + commitmessage);
+                    try {
+                        var changeLogLine = handleCommitTitle(commit.getShortMessage(),format);
+                        if (changeLogLine.isPresent()) {
+                            var type = changeLogLine.get().type;
+                            if (!commitsByType.containsKey(type)) {
+                                commitsByType.put(type, new ArrayList<>());
                             }
-                        } catch (Exception e) {
-                            System.out.println("there is an issue with " + commit.getShortMessage());
-                            System.out.println(type + " " + precision + " " + commitmessage);
-                        }
-
+                            commitsByType.get(type).add(changeLogLine.get().message);
+                        } 
+                    } catch (Exception e) {
+                        System.out.println("there is an issue with " + commit.getShortMessage());
                     }
+                    
                 });
                 versionToDisplay.add(new ToDisplay(rnfv, commitsByType));
             });
@@ -253,6 +239,33 @@ public class ReleaseNoteGenerator implements Runnable {
         }
     }
 
+
+    record ChangeLogLine(String type,String message){};
+
+    Optional<ChangeLogLine> handleCommitTitle(final String title, OutputFormat format){
+        var m = pattern.matcher(title);
+        if (m.find()) {
+            var type = m.group(3) != null ? m.group(3) : "chore";
+            var precision = m.group(4);
+            var commitmessage = type != null ? m.group(5) : (m.group(4) != null ? m.group(4) : "");
+
+            /*if (!commitsByType.containsKey(type)) {
+                commitsByType.put(type, new ArrayList<>());
+            }*/
+            
+            Supplier<String> commitMessageSupplier = () -> commitmessage.trim().isEmpty() ? ""
+                    : parseCommitMessage(commitmessage, format).trim();
+            Supplier<String> commitMessageSuplier2 = () -> (((precision != null
+                    && !precision.trim().isEmpty())
+                            ? (parseCommitMessage(precision, format).trim() + " : ") : "")
+                    + commitMessageSupplier.get()).trim();
+            if (commitMessageSuplier2.get() != null && !commitMessageSuplier2.get().isEmpty()) {
+                return Optional.of(new ChangeLogLine(type, commitMessageSuplier2.get()));
+            } 
+        }
+        return Optional.empty();
+    }
+
     void initExclusionFilter() {
         allExclusionPatterns.addAll(Arrays.asList(COMMON_FILTER_STRINGS));
         if (patternToExclude != null)
@@ -314,16 +327,6 @@ public class ReleaseNoteGenerator implements Runnable {
         }
         return Boolean.FALSE;
     };
-
-    String handleCommitMessage(String message) {
-        if (issueKey != null && bugTracker.url != null) {
-            var m = issueKey.matcher(message);
-            if (m.find()) {
-                return m.replaceFirst("link:" + bugTracker.url + "$0[$0]");
-            }
-        }
-        return message;
-    }
 
     String parseCommitMessage(String message, OutputFormat format) {
         if (issueKey != null && bugTracker.url != null) {
