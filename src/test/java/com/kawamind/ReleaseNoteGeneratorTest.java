@@ -64,16 +64,20 @@ class ReleaseNoteGeneratorTest {
         tmpRepoPath = tmpRepo.getDirectory().getAbsolutePath();
     }
 
+    record MessageExpectation(String initialMessage, OutputFormat outputFormat, ChangeLogLine result) {
+    };
 
-    record MessageExpectation(String initialMessage,OutputFormat outputFormat,ChangeLogLine result){};
-
-    static Stream<MessageExpectation> testHandleCommitTitle(){
+    static Stream<MessageExpectation> testHandleCommitTitle() {
         return Stream.of(
-                new MessageExpectation("build(context1):test1", OutputFormat.MARKDOWN, new ChangeLogLine("build", "context1 : test1")),
-                new MessageExpectation("bla: unexpected type", OutputFormat.MARKDOWN, new ChangeLogLine("chore", "bla : unexpected type")),
-                new MessageExpectation("without convention", OutputFormat.MARKDOWN, new ChangeLogLine("chore", "without convention")),
+                new MessageExpectation("build(context1):test1", OutputFormat.MARKDOWN,
+                        new ChangeLogLine("build", "context1 : test1")),
+                new MessageExpectation("bla: unexpected type", OutputFormat.MARKDOWN,
+                        new ChangeLogLine("chore", "bla : unexpected type")),
+                new MessageExpectation("without convention", OutputFormat.MARKDOWN,
+                        new ChangeLogLine("chore", "without convention")),
                 new MessageExpectation("test: thisTest", OutputFormat.MARKDOWN, new ChangeLogLine("test", "thisTest")),
-                new MessageExpectation("without convention", OutputFormat.MARKDOWN, new ChangeLogLine("chore", "without convention")));
+                new MessageExpectation("without convention", OutputFormat.MARKDOWN,
+                        new ChangeLogLine("chore", "without convention")));
     }
 
     @ParameterizedTest
@@ -82,11 +86,10 @@ class ReleaseNoteGeneratorTest {
         var releaseNote = new ReleaseNoteGenerator(configService, engine);
 
         var result = releaseNote.handleCommitTitle(expectation.initialMessage, expectation.outputFormat);
-        assertAll(
-                ()->assertTrue(result.isPresent(),"Changelog should be present"),
-        ()->assertEquals(expectation.result.message(), result.get().message(),"Chanhelog message should be equals"),
-        ()->assertEquals(expectation.result.type(), result.get().type(),"Changelog type shouldbe equals"));
-
+        assertAll(() -> assertTrue(result.isPresent(), "Changelog should be present"),
+                () -> assertEquals(expectation.result.message(), result.get().message(),
+                        "Chanhelog message should be equals"),
+                () -> assertEquals(expectation.result.type(), result.get().type(), "Changelog type shouldbe equals"));
 
     }
 
@@ -159,32 +162,6 @@ class ReleaseNoteGeneratorTest {
     }
 
     @Test
-    @DisplayName("release note should respect without-convention.adoc")
-    void releaseNoteShouldRespectTemplate1(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
-        var standard = new File("src/test/resources/without-convention.adoc");
-        addFileAndCommit("Commit 1");
-        addFileAndCommit("Commit 2");
-        addTag("v1");
-        addFileAndCommit("Commit 3");
-        addFileAndCommit("Commit 4");
-        addTag("v2");
-        var releasenote = tmpRepo.getDirectory().toPath()
-                .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".adoc").toFile();
-
-        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-f",OutputFormat.ADOC.name());
-
-        printReleaseNote(releasenote);
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
-        softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
-        softly.assertThat(releasenote).as("release note should have the same content as sample file")
-                .hasSameTextualContentAs(standard);
-
-        softly.assertAll();
-
-    }
-
-    @Test
     @DisplayName("release note should not print filtered commit")
     void releaseNoteShouldNotPrintFilteredCommit(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
         var standard = new File("src/test/resources/without-convention.adoc");
@@ -200,7 +177,8 @@ class ReleaseNoteGeneratorTest {
         var releasenote = tmpRepo.getDirectory().toPath()
                 .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".adoc").toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-e", "unwanted,skip-ci","-f",OutputFormat.ADOC.name());
+        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-e", "unwanted,skip-ci", "-f",
+                OutputFormat.ADOC.name());
 
         printReleaseNote(releasenote);
         SoftAssertions softly = new SoftAssertions();
@@ -213,165 +191,200 @@ class ReleaseNoteGeneratorTest {
 
     }
 
-    @Test
-    @DisplayName("release note should respect with-convention.adoc")
-    void releaseNoteShouldRespectTemplateWIthConvention(QuarkusMainLauncher launcher)
-            throws GitAPIException, IOException {
-        var standard = new File("src/test/resources/with-convention.adoc");
-        addFileAndCommit("fix: issue1");
-        addFileAndCommit("fix: issue2");
-        addFileAndCommit("feat: add awesome feature");
-        addTag("v1");
-        addFileAndCommit("test: fix tests");
-        addFileAndCommit("build: add uber dep");
-        addFileAndCommit("build: add uber dep2");
-        addTag("v2");
-        addFileAndCommit("ops: add deploy script");
-        addFileAndCommit("docs: add doc one");
-        addFileAndCommit("doc: add doc two");
-        addFileAndCommit("perf: to the sky");
-        addTag("v3");
-        var releasenote = tmpRepo.getDirectory().toPath()
-                .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.ADOC.getExtension())
-                .toFile();
+    @Nested
+    @DisplayName("Asciidoc")
+    class Asciidoc {
+        @Test
+        @DisplayName("release note should respect without-convention.adoc")
+        void releaseNoteShouldRespectTemplate1(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
+            var standard = new File("src/test/resources/without-convention.adoc");
+            addFileAndCommit("Commit 1");
+            addFileAndCommit("Commit 2");
+            addTag("v1");
+            addFileAndCommit("Commit 3");
+            addFileAndCommit("Commit 4");
+            addTag("v2");
+            var releasenote = tmpRepo.getDirectory().toPath()
+                    .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".adoc").toFile();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-f",OutputFormat.ADOC.name());
+            LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.ADOC.name());
 
-        printReleaseNote(releasenote);
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
-        softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
-        softly.assertThat(releasenote).as("release note should have the same content as sample file")
-                .hasSameTextualContentAs(standard);
-        softly.assertAll();
+            printReleaseNote(releasenote);
+            SoftAssertions softly = new SoftAssertions();
+            softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
+            softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
+            softly.assertThat(releasenote).as("release note should have the same content as sample file")
+                    .hasSameTextualContentAs(standard);
 
+            softly.assertAll();
+
+        }
+
+        @Test
+        @DisplayName("release note should respect with-convention.adoc")
+        void releaseNoteShouldRespectTemplateWIthConvention(QuarkusMainLauncher launcher)
+                throws GitAPIException, IOException {
+            var standard = new File("src/test/resources/with-convention.adoc");
+            addFileAndCommit("fix: issue1");
+            addFileAndCommit("fix: issue2");
+            addFileAndCommit("feat: add awesome feature");
+            addTag("v1");
+            addFileAndCommit("test: fix tests");
+            addFileAndCommit("build: add uber dep");
+            addFileAndCommit("build: add uber dep2");
+            addTag("v2");
+            addFileAndCommit("ops: add deploy script");
+            addFileAndCommit("docs: add doc one");
+            addFileAndCommit("doc: add doc two");
+            addFileAndCommit("perf: to the sky");
+            addTag("v3");
+            var releasenote = tmpRepo.getDirectory().toPath().resolve(
+                    ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.ADOC.getExtension())
+                    .toFile();
+
+            LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.ADOC.name());
+
+            printReleaseNote(releasenote);
+            SoftAssertions softly = new SoftAssertions();
+            softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
+            softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
+            softly.assertThat(releasenote).as("release note should have the same content as sample file")
+                    .hasSameTextualContentAs(standard);
+            softly.assertAll();
+
+        }
+
+        @Test
+        @DisplayName("release note should have an history section if there is more than 5 tags")
+        void releaseNoteShouldHaveAnHistorySectionIfThereIsMoreThan5Commits(QuarkusMainLauncher launcher)
+                throws GitAPIException, IOException {
+            var standard = new File("src/test/resources/with-history.adoc");
+            addFileAndCommit("fix: issue1");
+            addTag("v1");
+            addFileAndCommit("test: fix tests");
+            addTag("v2");
+            addFileAndCommit("ops: add deploy script");
+            addTag("v3");
+            addFileAndCommit("ops: add deploy script 2");
+            addTag("v4");
+            addFileAndCommit("ops: add deploy script 3");
+            addTag("v5");
+            addFileAndCommit("ops: add deploy script 4");
+            addTag("v6");
+            var releasenote = tmpRepo.getDirectory().toPath().resolve(
+                    ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.ADOC.getExtension())
+                    .toFile();
+
+            LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.ADOC.name());
+
+            printReleaseNote(releasenote);
+
+            SoftAssertions softly = new SoftAssertions();
+            softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
+            softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
+            softly.assertThat(releasenote).as("release note should have the same content as sample file")
+                    .hasSameTextualContentAs(standard);
+            softly.assertAll();
+        }
     }
 
-    @Test
-    @DisplayName("release note should have an history section if there is more than 5 tags")
-    void releaseNoteShouldHaveAnHistorySectionIfThereIsMoreThan5Commits(QuarkusMainLauncher launcher)
-            throws GitAPIException, IOException {
-        var standard = new File("src/test/resources/with-history.adoc");
-        addFileAndCommit("fix: issue1");
-        addTag("v1");
-        addFileAndCommit("test: fix tests");
-        addTag("v2");
-        addFileAndCommit("ops: add deploy script");
-        addTag("v3");
-        addFileAndCommit("ops: add deploy script 2");
-        addTag("v4");
-        addFileAndCommit("ops: add deploy script 3");
-        addTag("v5");
-        addFileAndCommit("ops: add deploy script 4");
-        addTag("v6");
-        var releasenote = tmpRepo.getDirectory().toPath()
-                .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.ADOC.getExtension())
-                .toFile();
+    @Nested
+    @DisplayName("Markdown")
+    class Markdown {
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath,"-f",OutputFormat.ADOC.name());
+        @Test
+        @DisplayName("release note should respect with-convention.md")
+        void releaseNoteShouldRespectTemplateWithConventionMD(QuarkusMainLauncher launcher)
+                throws GitAPIException, IOException {
+            var standard = new File("src/test/resources/with-convention.md");
+            addFileAndCommit("fix: issue1");
+            addFileAndCommit("fix: issue2");
+            addFileAndCommit("feat: add awesome feature");
+            addTag("v1");
+            addFileAndCommit("test: fix tests");
+            addFileAndCommit("build: add uber dep");
+            addFileAndCommit("build: add uber dep2");
+            addTag("v2");
+            addFileAndCommit("ops: add deploy script");
+            addFileAndCommit("docs: add doc one");
+            addFileAndCommit("doc: add doc two");
+            addFileAndCommit("perf: to the sky");
+            addTag("v3");
+            var releasenote = tmpRepo.getDirectory().toPath().resolve(
+                    ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.MARKDOWN.getExtension())
+                    .toFile();
 
-        printReleaseNote(releasenote);
+            LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", "MARKDOWN");
 
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
-        softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
-        softly.assertThat(releasenote).as("release note should have the same content as sample file")
-                .hasSameTextualContentAs(standard);
-        softly.assertAll();
-    }
+            printReleaseNote(releasenote);
+            SoftAssertions softly = new SoftAssertions();
+            softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
+            softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
+            softly.assertThat(releasenote).as("release note should have the same content as sample file")
+                    .hasSameTextualContentAs(standard);
+            softly.assertAll();
 
-    @Test
-    @DisplayName("release note should respect with-convention.md")
-    void releaseNoteShouldRespectTemplateWithConventionMD(QuarkusMainLauncher launcher)
-            throws GitAPIException, IOException {
-        var standard = new File("src/test/resources/with-convention.md");
-        addFileAndCommit("fix: issue1");
-        addFileAndCommit("fix: issue2");
-        addFileAndCommit("feat: add awesome feature");
-        addTag("v1");
-        addFileAndCommit("test: fix tests");
-        addFileAndCommit("build: add uber dep");
-        addFileAndCommit("build: add uber dep2");
-        addTag("v2");
-        addFileAndCommit("ops: add deploy script");
-        addFileAndCommit("docs: add doc one");
-        addFileAndCommit("doc: add doc two");
-        addFileAndCommit("perf: to the sky");
-        addTag("v3");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve(
-                ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.MARKDOWN.getExtension())
-                .toFile();
+        }
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", "MARKDOWN");
+        @Test
+        @DisplayName("release note should have an history section if there is more than 5 commits md")
+        void releaseNoteShouldHaveAnHistorySectionIfThereIsMoreThan5CommitsMD(QuarkusMainLauncher launcher)
+                throws GitAPIException, IOException {
+            var standard = new File("src/test/resources/with-history.md");
+            addFileAndCommit("fix: issue1");
+            addTag("v1");
+            addFileAndCommit("test: fix tests");
+            addTag("v2");
+            addFileAndCommit("ops: add deploy script");
+            addTag("v3");
+            addFileAndCommit("ops: add deploy script 2");
+            addTag("v4");
+            addFileAndCommit("ops: add deploy script 3");
+            addTag("v5");
+            addFileAndCommit("ops: add deploy script 4");
+            addTag("v6");
+            var releasenote = tmpRepo.getDirectory().toPath().resolve(
+                    ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.MARKDOWN.getExtension())
+                    .toFile();
 
-        printReleaseNote(releasenote);
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
-        softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
-        softly.assertThat(releasenote).as("release note should have the same content as sample file")
-                .hasSameTextualContentAs(standard);
-        softly.assertAll();
+            LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.MARKDOWN.name());
 
-    }
+            printReleaseNote(releasenote);
 
-    @Test
-    @DisplayName("release note should have an history section if there is more than 5 commits md")
-    void releaseNoteShouldHaveAnHistorySectionIfThereIsMoreThan5CommitsMD(QuarkusMainLauncher launcher)
-            throws GitAPIException, IOException {
-        var standard = new File("src/test/resources/with-history.md");
-        addFileAndCommit("fix: issue1");
-        addTag("v1");
-        addFileAndCommit("test: fix tests");
-        addTag("v2");
-        addFileAndCommit("ops: add deploy script");
-        addTag("v3");
-        addFileAndCommit("ops: add deploy script 2");
-        addTag("v4");
-        addFileAndCommit("ops: add deploy script 3");
-        addTag("v5");
-        addFileAndCommit("ops: add deploy script 4");
-        addTag("v6");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve(
-                ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.MARKDOWN.getExtension())
-                .toFile();
+            SoftAssertions softly = new SoftAssertions();
+            softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
+            softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
+            softly.assertThat(releasenote).as("release note should have the same content as sample file")
+                    .hasSameTextualContentAs(standard);
+            softly.assertAll();
+        }
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.MARKDOWN.name());
+        @Test
+        @DisplayName("release note should respect without-convention.md")
+        void releaseNoteShouldRespectTemplate1MD(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
+            var standard = new File("src/test/resources/without-convention.md");
+            addFileAndCommit("Commit 1");
+            addFileAndCommit("Commit 2");
+            addTag("v1");
+            addFileAndCommit("Commit 3");
+            addFileAndCommit("Commit 4");
+            addTag("v2");
+            var releasenote = tmpRepo.getDirectory().toPath().resolve(
+                    ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.MARKDOWN.getExtension())
+                    .toFile();
 
-        printReleaseNote(releasenote);
+            LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.MARKDOWN.name());
 
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
-        softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
-        softly.assertThat(releasenote).as("release note should have the same content as sample file")
-                .hasSameTextualContentAs(standard);
-        softly.assertAll();
-    }
+            printReleaseNote(releasenote);
+            SoftAssertions softly = new SoftAssertions();
+            softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
+            softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
+            softly.assertThat(releasenote).as("release note should have the same content as sample file")
+                    .hasSameTextualContentAs(standard);
 
-    @Test
-    @DisplayName("release note should respect without-convention.md")
-    void releaseNoteShouldRespectTemplate1MD(QuarkusMainLauncher launcher) throws GitAPIException, IOException {
-        var standard = new File("src/test/resources/without-convention.md");
-        addFileAndCommit("Commit 1");
-        addFileAndCommit("Commit 2");
-        addTag("v1");
-        addFileAndCommit("Commit 3");
-        addFileAndCommit("Commit 4");
-        addTag("v2");
-        var releasenote = tmpRepo.getDirectory().toPath().resolve(
-                ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + "." + OutputFormat.MARKDOWN.getExtension())
-                .toFile();
+            softly.assertAll();
 
-        LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.MARKDOWN.name());
-
-        printReleaseNote(releasenote);
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
-        softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
-        softly.assertThat(releasenote).as("release note should have the same content as sample file")
-                .hasSameTextualContentAs(standard);
-
-        softly.assertAll();
-
+        }
     }
 
     @Nested
@@ -410,7 +423,7 @@ class ReleaseNoteGeneratorTest {
                     .toFile();
 
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-p", "project-\\d*", "-b",
-                    "http://mybugtracker.com/","-f",OutputFormat.ADOC.name());
+                    "http://mybugtracker.com/", "-f", OutputFormat.ADOC.name());
 
             printReleaseNote(releasenote);
             SoftAssertions softly = new SoftAssertions();

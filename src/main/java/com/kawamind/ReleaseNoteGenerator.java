@@ -150,24 +150,23 @@ public class ReleaseNoteGenerator implements Runnable {
                     versions2commit.get(currentVersionId.get()).commits.add(currentCommit);
             });
 
-            
             final List<ToDisplay> versionToDisplay = new ArrayList<>();
             versions2commit.forEach((rnfv) -> {
                 final Map<String, List<String>> commitsByType = new HashMap<>();
                 rnfv.commits.forEach(commit -> {
                     try {
-                        var changeLogLine = handleCommitTitle(commit.getShortMessage(),format);
+                        var changeLogLine = handleCommitTitle(commit.getShortMessage(), format);
                         if (changeLogLine.isPresent()) {
                             var type = changeLogLine.get().type;
                             if (!commitsByType.containsKey(type)) {
                                 commitsByType.put(type, new ArrayList<>());
                             }
                             commitsByType.get(type).add(changeLogLine.get().message);
-                        } 
+                        }
                     } catch (Exception e) {
                         System.out.println("there is an issue with " + commit.getShortMessage());
                     }
-                    
+
                 });
                 versionToDisplay.add(new ToDisplay(rnfv, commitsByType));
             });
@@ -239,29 +238,28 @@ public class ReleaseNoteGenerator implements Runnable {
         }
     }
 
+    record ChangeLogLine(String type, String message) {
+    };
 
-    record ChangeLogLine(String type,String message){};
-
-    Optional<ChangeLogLine> handleCommitTitle(final String title, OutputFormat format){
+    Optional<ChangeLogLine> handleCommitTitle(final String title, OutputFormat format) {
         var m = pattern.matcher(title);
         if (m.find()) {
             var type = m.group(3) != null ? m.group(3) : "chore";
             var precision = m.group(4);
             var commitmessage = type != null ? m.group(5) : (m.group(4) != null ? m.group(4) : "");
 
-            /*if (!commitsByType.containsKey(type)) {
-                commitsByType.put(type, new ArrayList<>());
-            }*/
-            
+            /*
+             * if (!commitsByType.containsKey(type)) { commitsByType.put(type, new ArrayList<>()); }
+             */
+
             Supplier<String> commitMessageSupplier = () -> commitmessage.trim().isEmpty() ? ""
                     : parseCommitMessage(commitmessage, format).trim();
-            Supplier<String> commitMessageSuplier2 = () -> (((precision != null
-                    && !precision.trim().isEmpty())
-                            ? (parseCommitMessage(precision, format).trim() + " : ") : "")
-                    + commitMessageSupplier.get()).trim();
+            Supplier<String> commitMessageSuplier2 = () -> (((precision != null && !precision.trim().isEmpty())
+                    ? (parseCommitMessage(precision, format).trim() + " : ") : "") + commitMessageSupplier.get())
+                            .trim();
             if (commitMessageSuplier2.get() != null && !commitMessageSuplier2.get().isEmpty()) {
                 return Optional.of(new ChangeLogLine(type, commitMessageSuplier2.get()));
-            } 
+            }
         }
         return Optional.empty();
     }
