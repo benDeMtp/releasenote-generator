@@ -186,10 +186,11 @@ jobs:
         git add pom.xml
         git commit -m "Prepare for next development version ${{ needs.build.outputs.next-version }}"
         
-    - name: Push changes and tags
-      run: |
-        git push origin main
-        git push origin v${{ needs.build.outputs.version }}
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        force: true
+        tags: true
         
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
