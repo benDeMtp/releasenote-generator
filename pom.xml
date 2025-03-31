@@ -18,7 +18,7 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.2</surefire-plugin.version>
         <quarkus-jgit.version>3.3.3</quarkus-jgit.version>
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
         <assertj-core.version>3.26.3</assertj-core.version>
     </properties>
 
