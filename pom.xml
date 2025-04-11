@@ -31,6 +31,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>7.2.0.202503040940-r</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
