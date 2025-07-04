@@ -180,7 +180,7 @@ class ReleaseNoteGeneratorTest {
         LaunchResult result = launcher.launch("-d", tmpRepoPath, "-e", "unwanted,skip-ci", "-f",
                 OutputFormat.ADOC.name());
 
-        printReleaseNote(releasenote);
+
         SoftAssertions softly = new SoftAssertions();
         softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
         softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -208,8 +208,7 @@ class ReleaseNoteGeneratorTest {
                     .resolve(ReleaseNoteGenerator.DEFAULT_OUTPUT_FILE_NAME_PREFIX + ".adoc").toFile();
 
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.ADOC.name());
-
-            printReleaseNote(releasenote);
+            
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -244,7 +243,7 @@ class ReleaseNoteGeneratorTest {
 
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.ADOC.name());
 
-            printReleaseNote(releasenote);
+            
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -277,7 +276,7 @@ class ReleaseNoteGeneratorTest {
 
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.ADOC.name());
 
-            printReleaseNote(releasenote);
+            
 
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
@@ -316,7 +315,7 @@ class ReleaseNoteGeneratorTest {
 
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", "MARKDOWN");
 
-            printReleaseNote(releasenote);
+            
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -349,8 +348,6 @@ class ReleaseNoteGeneratorTest {
 
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.MARKDOWN.name());
 
-            printReleaseNote(releasenote);
-
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -375,7 +372,7 @@ class ReleaseNoteGeneratorTest {
 
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-f", OutputFormat.MARKDOWN.name());
 
-            printReleaseNote(releasenote);
+            
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -425,7 +422,6 @@ class ReleaseNoteGeneratorTest {
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-p", "project-\\d*", "-b",
                     "http://mybugtracker.com/", "-f", OutputFormat.ADOC.name());
 
-            printReleaseNote(releasenote);
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -451,7 +447,7 @@ class ReleaseNoteGeneratorTest {
             LaunchResult result = launcher.launch("-d", tmpRepoPath, "-p", "project-\\d*", "-b",
                     "http://mybugtracker.com/", "-f", OutputFormat.MARKDOWN.name());
 
-            printReleaseNote(releasenote);
+            
             SoftAssertions softly = new SoftAssertions();
             softly.assertThat(result.exitCode()).as("Status code should be 0").isEqualTo(0);
             softly.assertThat(releasenote).as("release note should not be empty").isNotEmpty();
@@ -488,12 +484,5 @@ class ReleaseNoteGeneratorTest {
         return repository;
     }
 
-    void printReleaseNote(File releasenote) throws IOException {
-        try (var read = new BufferedReader(new FileReader(releasenote))) {
-            System.out.println("****");
-            read.lines().forEach(System.out::println);
-            System.out.println("****");
-        }
-    }
 
 }
