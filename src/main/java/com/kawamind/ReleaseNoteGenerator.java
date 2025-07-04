@@ -1,5 +1,7 @@
 package com.kawamind;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -143,6 +145,7 @@ public class ReleaseNoteGenerator implements Runnable {
                     currentVersion.set(new ReleasedVersion(version,
                             formatter.format(currentCommit.getAuthorIdent().getWhenAsInstant())));
                     versions2commit.add(new ReleaseNoteForVersion(currentVersion.get(), new ArrayList<>()));
+                    log.trace(version + " : " + versions2commit.size() + " versions found so far");
                 }
 
                 if (!versions2commit.isEmpty() && messageFilter.test(currentCommit.getFullMessage())
@@ -276,6 +279,15 @@ public class ReleaseNoteGenerator implements Runnable {
             releasenote.println(getTemplateByFormat(format)
                     .data("releasenote", new ReleaseNote(lastVersions, oldVersions)).render());
         }
+        if(log.isDebugEnabled()) {
+            try(var reader = new BufferedReader(new FileReader(outputPath.toFile()))) {
+                log.debug("****");
+                reader.lines().forEach(t -> log.debug(t));
+                log.debug("****");
+            } catch (IOException e) {
+                log.error("Error reading the release note file", e);
+            }
+        } 
     }
 
     Template getTemplateByFormat(OutputFormat format) {

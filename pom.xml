@@ -106,23 +106,8 @@
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
-                    </systemPropertyVariables>
-                    <reportFormat>plain</reportFormat>
-                    <consoleOutputReporter>
-                        <disable>true</disable>
-                    </consoleOutputReporter>
-                    <statelessTestsetInfoReporter
-                        implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter">
-                        <theme>UNICODE</theme>
-                    </statelessTestsetInfoReporter>
+                    </systemPropertyVariables>    
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>me.fabriciorby</groupId>
-                        <artifactId>maven-surefire-junit5-tree-reporter</artifactId>
-                        <version>1.4.0</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -167,6 +152,37 @@
                     --trace-object-instantiation=java.util.Random,
                     --initialize-at-run-time=org.eclipse.jgit.internal.storage.file.WindowCache\,org.eclipse.jgit.util.FileUtils</quarkus.native.additional-build-args>
             </properties>
+        </profile>
+        <profile>
+            <id>infoTreeReporter</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire-plugin.version}</version>
+                        <configuration>
+                            <reportFormat>plain</reportFormat>
+                            <consoleOutputReporter>
+                                <disable>true</disable>
+                            </consoleOutputReporter>
+                            <statelessTestsetInfoReporter
+                                implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter">
+                                <theme>UNICODE</theme>
+                            </statelessTestsetInfoReporter>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>me.fabriciorby</groupId>
+                                <artifactId>maven-surefire-junit5-tree-reporter</artifactId>
+                                <version>1.4.0</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
