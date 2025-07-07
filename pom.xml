@@ -17,7 +17,7 @@
         <quarkus.platform.version>3.24.1</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.3</surefire-plugin.version>
-        <quarkus-jgit.version>3.5.2</quarkus-jgit.version>
+        <quarkus-jgit.version>3.6.0</quarkus-jgit.version>
         <lombok.version>1.18.38</lombok.version>
         <assertj-core.version>3.27.3</assertj-core.version>
     </properties>
