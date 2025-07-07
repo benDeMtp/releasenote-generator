@@ -28,6 +28,9 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.revwalk.RevTag;
+import org.eclipse.jgit.revwalk.DepthWalk.RevWalk;
 
 import com.kawamind.config.ConfigService;
 
@@ -298,9 +301,46 @@ public class ReleaseNoteGenerator implements Runnable {
         };
     }
 
-    Boolean hasTagMatchingCommit(Ref t, RevCommit u, Repository repo) {
+    /*Boolean hasTagMatchingCommit(Ref t, RevCommit u, Repository repo) {
         return getActualRefObjectId(t, repo).equals(u.getId());
 
+    }*/
+
+    private boolean hasTagMatchingCommit(Ref tag, RevCommit commit, Repository repo) { 
+        try { 
+            ObjectId tagTargetId = resolveTagTarget(tag, repo);
+            return tagTargetId != null && tagTargetId.equals(commit.getId()); 
+        } catch (IOException e) { 
+            log.warn("Erreur lors de la résolution du tag {}: {}", tag.getName(), e.getMessage()); return false; 
+        } 
+    } 
+    
+    private ObjectId resolveTagTarget(Ref tag, Repository repo) throws IOException {
+        ObjectId objectId = tag.getObjectId();
+        if (objectId == null) { 
+            log.debug("Tag {} n'a pas d'ObjectId", tag.getName());
+            return null;
+        } 
+        // Résolution récursive pour gérer tous les types d'objets 
+        try (RevWalk revWalk = new RevWalk(repo,15)) {
+             try { RevObject revObject = revWalk.parseAny(objectId);
+                 // Déréférencement récursif jusqu'au commit 
+                 while (revObject instanceof RevTag) { 
+                    RevTag revTag = (RevTag) revObject;
+                    revObject = revWalk.parseAny(revTag.getObject());
+                 } 
+                 // Vérifier que c'est bien un commit 
+                 if (revObject instanceof RevCommit) { 
+                    return revObject.getId(); 
+                } else { 
+                    log.debug("Tag {} ne pointe pas vers un commit mais vers {}", tag.getName(), revObject.getClass().getSimpleName());
+                     return null; 
+                } 
+            } catch (Exception e) {
+                 log.debug("Impossible de parser l'objet pour le tag {}: {}", tag.getName(), e.getMessage()); return null;
+             } 
+            
+        } 
     }
 
     private ObjectId getActualRefObjectId(Ref ref, Repository repo) {
