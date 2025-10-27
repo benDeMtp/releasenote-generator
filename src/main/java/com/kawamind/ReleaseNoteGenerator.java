@@ -179,8 +179,8 @@ public class ReleaseNoteGenerator implements Runnable {
             versionToDisplay.forEach((td) -> {
                 var version = new Version();
 
-                if (!givenTagReached.get()
-                        && (isPoinsonPill.apply(tag, td.releaseNoteForVersion.releasedVersion.version)
+                if (givenTagReached.get()
+                        || (isPoinsonPill.apply(tag, td.releaseNoteForVersion.releasedVersion.version)
                                 || (Objects.isNull(tag) && listedTag.get() >= DEFAULT_MAX_VERSION))) {// View : if the
                                                                                                       // condition is
                                                                                                       // true, switch to

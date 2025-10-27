@@ -1,5 +1,6 @@
 {#each versions}
 {#if !collapsed }=== {/if}Version : {it.name} ({it.date})
+
 {#if it.features.size > 0}
 {#include adoc/section-desc title="Features 💰" commits=it.features /}
 {/if}
