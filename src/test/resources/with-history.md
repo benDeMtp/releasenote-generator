@@ -27,4 +27,8 @@ Version : v1 (05/05/2018)
 - Corrections 🩹
     - issue1
 
+Version : v0.5 (05/05/2018)
+- Corrections 🩹
+    - issue0
+
 </details>

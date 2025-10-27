@@ -1,20 +1,13 @@
 package com.kawamind;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.UUID;
-import java.util.stream.Stream;
-
+import com.kawamind.ReleaseNoteGenerator.ChangeLogLine;
+import com.kawamind.config.ConfigService;
+import io.quarkus.qute.Engine;
+import io.quarkus.test.junit.main.LaunchResult;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
+import jakarta.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.SoftAssertions;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CommitCommand;
@@ -32,15 +25,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import com.kawamind.ReleaseNoteGenerator.ChangeLogLine;
-import com.kawamind.config.ConfigService;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.UUID;
+import java.util.stream.Stream;
 
-import io.quarkus.qute.Engine;
-import io.quarkus.test.junit.main.LaunchResult;
-import io.quarkus.test.junit.main.QuarkusMainLauncher;
-import io.quarkus.test.junit.main.QuarkusMainTest;
-import jakarta.inject.Inject;
-import lombok.extern.slf4j.Slf4j;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusMainTest
 @Slf4j
@@ -258,6 +254,8 @@ class ReleaseNoteGeneratorTest {
         void releaseNoteShouldHaveAnHistorySectionIfThereIsMoreThan5Commits(QuarkusMainLauncher launcher)
                 throws GitAPIException, IOException {
             var standard = new File("src/test/resources/with-history.adoc");
+            addFileAndCommit("fix: issue0");
+            addTag("v0.5");
             addFileAndCommit("fix: issue1");
             addTag("v1");
             addFileAndCommit("test: fix tests");
@@ -330,6 +328,8 @@ class ReleaseNoteGeneratorTest {
         void releaseNoteShouldHaveAnHistorySectionIfThereIsMoreThan5CommitsMD(QuarkusMainLauncher launcher)
                 throws GitAPIException, IOException {
             var standard = new File("src/test/resources/with-history.md");
+            addFileAndCommit("fix: issue0");
+            addTag("v0.5");
             addFileAndCommit("fix: issue1");
             addTag("v1");
             addFileAndCommit("test: fix tests");

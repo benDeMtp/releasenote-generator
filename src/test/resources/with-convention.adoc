@@ -4,6 +4,7 @@
 
 
 === Version : v3 (05/05/2018)
+
 * Refactorings 🚀
 ** to the sky
 
@@ -15,6 +16,7 @@
 ** add doc one
 
 === Version : v2 (05/05/2018)
+
 * Tests 🤖
 ** fix tests
 
@@ -23,6 +25,7 @@
 ** add uber dep
 
 === Version : v1 (05/05/2018)
+
 * Features 💰
 ** add awesome feature
 
