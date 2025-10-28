@@ -158,7 +158,7 @@ jobs:
   release-finalize:
     needs: build
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'release' && github.ref == 'refs/heads/main' && github.event.inputs.dryrun != 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v4
